@@ -134,7 +134,7 @@ export let languageService = getLanguageService({
 	contributions: []
 });
 
-export let KUBERNETES_SCHEMA_URL = "http://central.maven.org/maven2/io/fabric8/kubernetes-model/2.0.0/kubernetes-model-2.0.0-schema.json";
+export let KEDGE_SCHEMA_URL = "https://raw.githubusercontent.com/kedgeproject/json-schema/master/master/controllers/deploymentspecmod.json";
 export let customLanguageService = getCustomLanguageService(schemaRequestService, workspaceContext, []);
 
 // The settings interface describes the server relevant settings part
@@ -181,7 +181,7 @@ connection.onDidChangeConfiguration((change) => {
 		}
 		schemaConfigurationSettings.push(schemaObj);
 	}
-	
+
 	setSchemaStoreSettingsIfNotSet();
 
 	updateConfiguration();
@@ -210,16 +210,16 @@ function setSchemaStoreSettingsIfNotSet(){
 }
 
 function getSchemaStoreMatchingSchemas(){
-	
+
 	return xhr({ url: "http://schemastore.org/api/json/catalog.json" }).then(response => {
-		
+
 		let languageSettings= {
 			schemas: []
 		};
 
 		let schemas = JSON.parse(response.responseText);
 		for(let schemaIndex in schemas.schemas){
-			
+
 			let schema = schemas.schemas[schemaIndex];
 			if(schema && schema.fileMatch){
 
@@ -231,7 +231,7 @@ function getSchemaStoreMatchingSchemas(){
 					}
 
 				}
-				
+
 			}
 
 		}
@@ -296,8 +296,8 @@ function updateConfiguration() {
 
 function configureSchemas(uri, fileMatch, schema, languageSettings){
 
-	if(uri.toLowerCase().trim() === "kubernetes"){
-		uri = KUBERNETES_SCHEMA_URL;	
+	if(uri.toLowerCase().trim() === "kedge"){
+		uri = KEDGE_SCHEMA_URL;
 	}
 
 	if(schema === null){
@@ -306,14 +306,14 @@ function configureSchemas(uri, fileMatch, schema, languageSettings){
 		languageSettings.schemas.push({ uri, fileMatch: fileMatch, schema: schema });
 	}
 
-	if(fileMatch.constructor === Array && uri === KUBERNETES_SCHEMA_URL){
+	if(fileMatch.constructor === Array && uri === KEDGE_SCHEMA_URL){
 		fileMatch.forEach((url) => {
 			specificValidatorPaths.push(url);
 		});
-	}else if(uri === KUBERNETES_SCHEMA_URL){
+	}else if(uri === KEDGE_SCHEMA_URL){
 		specificValidatorPaths.push(fileMatch);
 	}
-	
+
 	return languageSettings;
 }
 
@@ -346,15 +346,15 @@ function triggerValidation(textDocument: TextDocument): void {
 }
 
 function validateTextDocument(textDocument: TextDocument): void {
-	
+
 	if (textDocument.getText().length === 0) {
-		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });		
+		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
 		return;
 	}
 
 	let yamlDocument = parseYAML(textDocument.getText());
-	let isKubernetesFile = isKubernetes(textDocument);
-	customLanguageService.doValidation(textDocument, yamlDocument, isKubernetesFile).then(function(diagnosticResults){
+	let isKedgeFile = isKedge(textDocument);
+	customLanguageService.doValidation(textDocument, yamlDocument, isKedgeFile).then(function(diagnosticResults){
 
 		let diagnostics = [];
 		for(let diagnosticItem in diagnosticResults){
@@ -366,7 +366,7 @@ function validateTextDocument(textDocument: TextDocument): void {
 	}, function(error){});
 }
 
-function isKubernetes(textDocument){
+function isKedge(textDocument){
 	for(let path in specificValidatorPaths){
 		let globPath = specificValidatorPaths[path];
 		let fpa = new FilePatternAssociation(globPath);
@@ -392,11 +392,11 @@ connection.onDidChangeWatchedFiles((change) => {
 
 connection.onCompletion(textDocumentPosition =>  {
 	let textDocument = documents.get(textDocumentPosition.textDocument.uri);
-	let isKubernetesFile = isKubernetes(textDocument);
+	let isKedgeFile = isKedge(textDocument);
 	let completionFix = completionHelper(textDocument, textDocumentPosition.position);
 	let newText = completionFix.newText;
 	let jsonDocument = parseYAML(newText);
-	return customLanguageService.doComplete(textDocument, textDocumentPosition.position, jsonDocument, isKubernetesFile);
+	return customLanguageService.doComplete(textDocument, textDocumentPosition.position, jsonDocument, isKedgeFile);
 });
 
 function completionHelper(document: TextDocument, textDocumentPosition: Position){
@@ -404,7 +404,7 @@ function completionHelper(document: TextDocument, textDocumentPosition: Position
 		//Get the string we are looking at via a substring
 		let linePos = textDocumentPosition.line;
 		let position = textDocumentPosition;
-		let lineOffset = getLineOffsets(document.getText()); 
+		let lineOffset = getLineOffsets(document.getText());
 		let start = lineOffset[linePos]; //Start of where the autocompletion is happening
 		let end = 0; //End of where the autocompletion is happening
 		if(lineOffset[linePos+1]){
@@ -417,7 +417,7 @@ function completionHelper(document: TextDocument, textDocumentPosition: Position
 		//Check if the string we are looking at is a node
 		if(textLine.indexOf(":") === -1){
 			//We need to add the ":" to load the nodes
-					
+
 			let newText = "";
 
 			//This is for the empty line case
@@ -425,9 +425,9 @@ function completionHelper(document: TextDocument, textDocumentPosition: Position
 			if(trimmedText.length === 0 || (trimmedText.length === 1 && trimmedText[0] === '-')){
 				//Add a temp node that is in the document but we don't use at all.
 				if(lineOffset[linePos+1]){
-					newText = document.getText().substring(0, start+(textLine.length-1)) + "holder:\r\n" + document.getText().substr(end+2); 
+					newText = document.getText().substring(0, start+(textLine.length-1)) + "holder:\r\n" + document.getText().substr(end+2);
 				}else{
-					newText = document.getText().substring(0, start+(textLine.length)) + "holder:\r\n" + document.getText().substr(end+2); 
+					newText = document.getText().substring(0, start+(textLine.length)) + "holder:\r\n" + document.getText().substr(end+2);
 				}
 			//For when missing semi colon case
 			}else{
@@ -443,7 +443,7 @@ function completionHelper(document: TextDocument, textDocumentPosition: Position
 				"newText": newText,
 				"newPosition": textDocumentPosition
 			}
-			
+
 		}else{
 
 			//All the nodes are loaded
@@ -463,8 +463,8 @@ connection.onCompletionResolve(completionItem => {
 connection.onHover(textDocumentPositionParams => {
 	let document = documents.get(textDocumentPositionParams.textDocument.uri);
 	let jsonDocument = parseYAML(document.getText());
-	let isKubernetesFile = isKubernetes(textDocumentPositionParams.textDocument)
-	return customLanguageService.doHover(document, textDocumentPositionParams.position, jsonDocument, isKubernetesFile);
+	let isKedgeFile = isKedge(textDocumentPositionParams.textDocument)
+	return customLanguageService.doHover(document, textDocumentPositionParams.position, jsonDocument, isKedgeFile);
 });
 
 connection.onDocumentSymbol(documentSymbolParams => {
