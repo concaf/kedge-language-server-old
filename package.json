@@ -1,5 +1,5 @@
 {
-  "name": "yaml-language-server",
+  "name": "kedge-language-server",
   "description": "YAML language server",
   "version": "0.0.6",
   "author": "Gorkem Ercan (Red Hat)",
@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/redhat-developer/yaml-language-server.git"
+    "url": "https://github.com/containscafeine/kedge-language-server.git"
   },
   "dependencies": {
     "deep-equal": "^1.0.1",
